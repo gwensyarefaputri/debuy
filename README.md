@@ -1,8 +1,8 @@
-# Debuy - Cross-Chain Bridge Event Listener & Relayer Simulation
+# Debuy: Cross-Chain Bridge Event listener & Relayer Simulation
 
-This repository contains a Python-based simulation of a crucial backend component for a cross-chain bridge. It acts as an event listener and a transaction relayer, demonstrating the architectural patterns required to securely and reliably move information between two distinct blockchains.
+This repository contains a Python-based simulation of a crucial backend component for a cross-chain bridge: an event listener and transaction relayer. It demonstrates the architectural patterns required to securely and reliably move information between two distinct blockchains.
 
-The script is designed to be modular and robust, and it showcases best practices such as state management, error handling, and interaction with external services.
+The script is designed to be modular and robust, showcasing best practices such as state management, error handling, and interaction with external services.
 
 ## Concept
 
@@ -22,7 +22,7 @@ A cross-chain bridge allows users to transfer assets or data from a _source chai
 3.  After waiting for a certain number of block confirmations on the source chain (to prevent re-org attacks), the relayers reach a consensus.
 4.  One of the relayers then submits a transaction to a smart contract on the destination chain to mint an equivalent amount of "wrapped" assets for the user.
 
-This project simulates the off-chain **relayer** component (steps 2, 3, and 4). It connects to a source chain, scans for locking events, manages the transaction lifecycle, and simulates the final submission to the destination chain.
+This project simulates the off-chain **relayer** component (steps 2, 3, and 4). It connects to a source chain, scans for lock events, manages the transaction lifecycle, and simulates the final submission to the destination chain.
 
 ## Code Architecture
 
@@ -33,8 +33,28 @@ The script is architected with a clear separation of concerns, with distinct cla
 -   **`EventScanner`**: Responsible for scanning a specific block range on a blockchain for a particular smart contract event. It uses the `BlockchainConnector` to perform its queries and efficiently filters the results.
 
 -   **`CrossChainTransaction`**: A data class representing the state of a single bridging transaction. It tracks everything from the initial event data to its current status (e.g., `INITIATED`, `CONFIRMED_SOURCE`, `COMPLETED`, `FAILED`), transaction hashes, and other metadata.
+    ```python
+    # A simplified representation of the transaction data class
+    from dataclasses import dataclass
+    from enum import Enum
 
--   **`BridgeRelayer`**: The central orchestrator, bringing all other components together. This class contains the main business logic for the bridging process:
+    class TxStatus(Enum):
+        INITIATED = "INITIATED"
+        CONFIRMED_SOURCE = "CONFIRMED_SOURCE"
+        RELAY_PENDING = "RELAY_PENDING"
+        COMPLETED = "COMPLETED"
+        FAILED = "FAILED"
+
+    @dataclass
+    class CrossChainTransaction:
+        tx_hash_source: str
+        status: TxStatus
+        event_data: dict
+        confirmations: int = 0
+        # ... other relevant fields like destination tx hash, error messages, etc.
+    ```
+
+-   **`BridgeRelayer`**: The central orchestrator that integrates all other components and contains the main business logic for the bridging process:
     -   Initializes and manages the `EventScanner`.
     -   Maintains a dictionary of all `CrossChainTransaction` objects currently in flight.
     -   Implements the state machine for processing transactions from detection to completion.
@@ -94,7 +114,7 @@ Follow these steps to set up and run the simulation.
 -   Python 3.8+
 -   Access to two Ethereum-compatible JSON-RPC endpoints (e.g., from [Infura](https://infura.io/), [Alchemy](https://www.alchemy.com/), or a local node like [Ganache](https://trufflesuite.com/ganache/)).
 -   Deployed bridge contract addresses on both chains.
--   The ABI (Application Binary Interface) for your bridge contract, typically as a JSON file.
+-   The ABI (Application Binary Interface) for your bridge contract, typically as a JSON file. This file defines the contract's functions and events, allowing `web3.py` to interact with it.
 
 ### 2. Setup
 
@@ -121,9 +141,9 @@ pip install -r requirements.txt
 
 ### 3. Configuration
 
-Create a file named `.env` in the root of the project directory. Add your configuration details to this file. **Replace the placeholder values with your actual data.**
+Create a file named `.env` in the root of the project directory. Copy the example below into this file and replace the placeholder values with your actual data.
 
-Note: The `.env` file contains sensitive information like API keys and private keys and should **not** be committed to version control. Ensure it is listed in your `.gitignore` file.
+**Note**: The `.env` file contains sensitive information like API keys and private keys and should **not** be committed to version control. Ensure it is listed in your `.gitignore` file.
 
 ```env
 # .env example
