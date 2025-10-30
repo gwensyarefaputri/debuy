@@ -1,4 +1,4 @@
-# debuy - Cross-Chain Bridge Event Listener & Relayer Simulation
+# Debuy - Cross-Chain Bridge Event Listener & Relayer Simulation
 
 This repository contains a Python-based simulation of a crucial backend component for a cross-chain bridge. It acts as an event listener and a transaction relayer, demonstrating the architectural patterns required to securely and reliably move information between two distinct blockchains.
 
@@ -19,13 +19,13 @@ This project simulates the off-chain **relayer** component (steps 2, 3, and 4). 
 
 The script is architected with a separation of concerns, using several distinct classes to handle different responsibilities:
 
--   **`BlockchainConnector`**: A generic wrapper around the `web3.py` library. It manages the connection to a single blockchain's JSON-RPC endpoint and provides methods to get chain data and interact with contracts. An instance is created for both the source and destination chains.
+-   **`BlockchainConnector`**: A generic wrapper around the `web3.py` library. It manages the connection to a single blockchain's JSON-RPC endpoint and provides methods for querying chain data and interacting with contracts. An instance is created for both the source and destination chains.
 
--   **`EventScanner`**: Responsible for scanning a specific block range on a blockchain for a particular smart contract event. It uses the `BlockchainConnector` to perform its queries and efficiently filters for new events.
+-   **`EventScanner`**: Responsible for scanning a specific block range on a blockchain for a particular smart contract event. It uses the `BlockchainConnector` to perform its queries and efficiently filters the results.
 
--   **`CrossChainTransaction`**: A data class that represents the state of a single bridging transaction. It tracks everything from the initial event data to its current status (e.g., `INITIATED`, `CONFIRMED_SOURCE`, `COMPLETED`, `FAILED`), transaction hashes, and other metadata.
+-   **`CrossChainTransaction`**: A data class representing the state of a single bridging transaction. It tracks everything from the initial event data to its current status (e.g., `INITIATED`, `CONFIRMED_SOURCE`, `COMPLETED`, `FAILED`), transaction hashes, and other metadata.
 
--   **`BridgeRelayer`**: The central orchestrator. This class brings all other components together. It contains the main business logic for the bridging process:
+-   **`BridgeRelayer`**: The central orchestrator, bringing all other components together. This class contains the main business logic for the bridging process:
     -   Initializes and manages the `EventScanner`.
     -   Maintains a dictionary of all `CrossChainTransaction` objects currently in flight.
     -   Implements the state machine for processing transactions from detection to completion.
@@ -33,16 +33,21 @@ The script is architected with a separation of concerns, using several distinct 
     -   Simulates interaction with external services (like an oracle network) using the `requests` library.
     -   Simulates submitting the final transaction to the destination chain.
     ```python
-    # Conceptual usage in main()
+    # Example Instantiation
+    config = load_configuration() # Load from .env
+
+    source_chain = BlockchainConnector(config.SOURCE_RPC_URL)
+    dest_chain = BlockchainConnector(config.DEST_RPC_URL)
+
     relayer = BridgeRelayer(
-        source_connector=source_chain_connector,
-        destination_connector=destination_chain_connector,
-        config=app_config
+        source_connector=source_chain,
+        destination_connector=dest_chain,
+        config=config
     )
     relayer.run_simulation_loop()
     ```
 
--   **`main()` function**: The entry point of the script. It handles configuration loading (from a `.env` file), instantiates all the necessary classes, and runs the main simulation loop.
+-   **`main()` function**: The entry point of the script. It handles configuration loading (from a `.env` file), instantiates the necessary classes, and starts the main simulation loop.
 
 ## How it Works
 
@@ -52,7 +57,7 @@ The simulation runs in a continuous loop, with each iteration representing a "cy
 
 2.  **Event Scanning**: In each cycle, the `BridgeRelayer` asks the `EventScanner` to scan for new `TokensLocked` events on the source chain, starting from the last block it checked.
 
-3.  **Transaction Creation**: For each new event found, a `CrossChainTransaction` object is created with the status `INITIATED` and added to the relayer's list of active transactions.
+3.  **Transaction Creation**: For each new event found, a `CrossChainTransaction` object is created with the status `INITIATED` and added to the relayer's pool of active transactions.
 
 4.  **State Processing**: The relayer then iterates through all active transactions and processes them based on their current status:
     -   **`INITIATED`**: It checks if the source transaction has received the required number of block confirmations. If so, its status is updated to `CONFIRMED_SOURCE`.
@@ -78,8 +83,8 @@ Follow these steps to set up and run the simulation.
 
 First, clone the repository:
 ```bash
-git clone https://github.com/your-username/debuy.git
-cd debuy
+git clone https://github.com/your-username/Debuy.git
+cd Debuy
 ```
 
 Create a Python virtual environment and activate it:
@@ -96,6 +101,8 @@ pip install -r requirements.txt
 ### 3. Configuration
 
 Create a file named `.env` in the root of the project directory. Add your configuration details to this file. **Replace the placeholder values with your actual data.**
+
+Note: The `.env` file contains sensitive information like API keys and should not be committed to version control. Ensure it is listed in your `.gitignore` file.
 
 ```env
 # .env file
