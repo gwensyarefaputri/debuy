@@ -9,6 +9,15 @@ The script is designed to be modular and robust, and it showcases best practices
 A cross-chain bridge allows users to transfer assets or data from a _source chain_ to a _destination chain_. The core mechanism of many bridges works as follows:
 
 1.  A user locks their assets in a smart contract on the source chain. This action emits an event (e.g., `TokensLocked`).
+    ```solidity
+    // A simplified example of the event in the source chain's smart contract
+    event TokensLocked(
+        address indexed user,
+        address indexed token,
+        uint256 amount,
+        bytes32 indexed destinationTxId
+    );
+    ```
 2.  A network of off-chain listeners, known as relayers or validators, detects this event.
 3.  After waiting for a certain number of block confirmations on the source chain (to prevent re-org attacks), the relayers reach a consensus.
 4.  One of the relayers then submits a transaction to a smart contract on the destination chain to mint an equivalent amount of "wrapped" assets for the user.
@@ -29,16 +38,16 @@ The script is architected with a clear separation of concerns, with distinct cla
     -   Initializes and manages the `EventScanner`.
     -   Maintains a dictionary of all `CrossChainTransaction` objects currently in flight.
     -   Implements the state machine for processing transactions from detection to completion.
-    -   Handles logic for checking confirmations.
+    -   Handles logic for checking block confirmations.
     -   Simulates interaction with external services (like an oracle network) using the `requests` library.
     -   Simulates submitting the final transaction to the destination chain.
 
 -   **`main()` function**: The entry point of the script. It handles configuration loading (from a `.env` file), instantiates the necessary classes, and starts the main simulation loop.
 
-### Example Instantiation
+### Component Initialization
 
 ```python
-# --- Example of how the components are initialized in main.py ---
+# In main.py, components are initialized and wired together:
 config = load_configuration() # Loads environment variables
 
 # Set up connectors for both chains
@@ -62,14 +71,14 @@ The simulation runs in a continuous loop, with each iteration representing a "cy
 
 1.  **Initialization**: The script starts by connecting to the specified RPC endpoints for both the source and destination chains.
 
-2.  **Event Scanning**: In each cycle, the `BridgeRelayer` asks the `EventScanner` to scan for new `TokensLocked` events on the source chain, starting from the last block it checked.
+2.  **Event Scanning**: In each cycle, the `BridgeRelayer` instructs the `EventScanner` to scan for new `TokensLocked` events on the source chain, starting from the last block it checked.
 
 3.  **Transaction Creation**: For each new event found, a `CrossChainTransaction` object is created with the status `INITIATED` and added to the relayer's pool of active transactions.
 
 4.  **State Processing**: The relayer then iterates through all active transactions and processes them based on their current status:
     -   **`INITIATED`**: It checks if the source transaction has received the required number of block confirmations. If so, its status is updated to `CONFIRMED_SOURCE`.
-    -   **`CONFIRMED_SOURCE`**: It simulates a call to an external oracle or validator network via an HTTP request. This mimics the process of obtaining a cryptographic signature needed to authorize minting on the destination chain. Upon success, the transaction's status is updated to `RELAY_PENDING`.
-    -   **`RELAY_PENDING`**: It simulates the final step of building and sending a transaction to the destination chain's bridge contract to mint the new tokens. Upon successful simulation, the status is updated to `COMPLETED`.
+    -   **`CONFIRMED_SOURCE`**: It simulates a call to an external oracle or validator network to obtain a cryptographic signature needed to authorize minting on the destination chain. Upon success, the transaction's status is updated to `RELAY_PENDING`.
+    -   **`RELAY_PENDING`**: It simulates building and sending the final transaction to the destination chain's bridge contract to mint the new tokens. Upon successful simulation, the status is updated to `COMPLETED`.
     -   **`FAILED`**: If any step fails repeatedly, the transaction is marked as `FAILED` with a reason.
 
 5.  **Logging**: Throughout the process, detailed logs are printed to the console, showing the status of the relayer and each transaction it is processing.
@@ -92,6 +101,10 @@ Follow these steps to set up and run the simulation.
 First, clone the repository:
 ```bash
 git clone https://github.com/your-username/Debuy.git
+```
+
+Navigate into the project directory:
+```bash
 cd Debuy
 ```
 
