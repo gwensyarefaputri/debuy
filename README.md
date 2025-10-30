@@ -2,7 +2,7 @@
 
 This repository contains a Python-based simulation of a crucial backend component for a cross-chain bridge. It acts as an event listener and a transaction relayer, demonstrating the architectural patterns required to securely and reliably move information between two distinct blockchains.
 
-The script is designed to be modular, robust, and showcases best practices such as state management, error handling, and interaction with external services.
+The script is designed to be modular and robust, and it showcases best practices such as state management, error handling, and interaction with external services.
 
 ## Concept
 
@@ -17,7 +17,7 @@ This project simulates the off-chain **relayer** component (steps 2, 3, and 4). 
 
 ## Code Architecture
 
-The script is architected with a separation of concerns, using several distinct classes to handle different responsibilities:
+The script is architected with a clear separation of concerns, with distinct classes handling different responsibilities:
 
 -   **`BlockchainConnector`**: A generic wrapper around the `web3.py` library. It manages the connection to a single blockchain's JSON-RPC endpoint and provides methods for querying chain data and interacting with contracts. An instance is created for both the source and destination chains.
 
@@ -32,24 +32,31 @@ The script is architected with a separation of concerns, using several distinct 
     -   Handles logic for checking confirmations.
     -   Simulates interaction with external services (like an oracle network) using the `requests` library.
     -   Simulates submitting the final transaction to the destination chain.
-    ```python
-    # Example Instantiation
-    config = load_configuration() # Load from .env
-
-    source_chain = BlockchainConnector(config.SOURCE_RPC_URL)
-    dest_chain = BlockchainConnector(config.DEST_RPC_URL)
-
-    relayer = BridgeRelayer(
-        source_connector=source_chain,
-        destination_connector=dest_chain,
-        config=config
-    )
-    relayer.run_simulation_loop()
-    ```
 
 -   **`main()` function**: The entry point of the script. It handles configuration loading (from a `.env` file), instantiates the necessary classes, and starts the main simulation loop.
 
-## How it Works
+### Example Instantiation
+
+```python
+# --- Example of how the components are initialized in main.py ---
+config = load_configuration() # Loads environment variables
+
+# Set up connectors for both chains
+source_chain = BlockchainConnector(config.SOURCE_RPC_URL)
+dest_chain = BlockchainConnector(config.DEST_RPC_URL)
+
+# Create the main relayer instance
+relayer = BridgeRelayer(
+    source_connector=source_chain,
+    destination_connector=dest_chain,
+    config=config
+)
+
+# Start the main processing loop
+relayer.run_simulation_loop()
+```
+
+## How It Works
 
 The simulation runs in a continuous loop, with each iteration representing a "cycle" of the relayer's operation.
 
@@ -61,7 +68,7 @@ The simulation runs in a continuous loop, with each iteration representing a "cy
 
 4.  **State Processing**: The relayer then iterates through all active transactions and processes them based on their current status:
     -   **`INITIATED`**: It checks if the source transaction has received the required number of block confirmations. If so, its status is updated to `CONFIRMED_SOURCE`.
-    -   **`CONFIRMED_SOURCE`**: It simulates a call to an external oracle or validator network via an HTTP request. This mimics the process of obtaining a cryptographic signature needed to authorize the minting on the destination chain. Upon success, the transaction's status is updated to `RELAY_PENDING`.
+    -   **`CONFIRMED_SOURCE`**: It simulates a call to an external oracle or validator network via an HTTP request. This mimics the process of obtaining a cryptographic signature needed to authorize minting on the destination chain. Upon success, the transaction's status is updated to `RELAY_PENDING`.
     -   **`RELAY_PENDING`**: It simulates the final step of building and sending a transaction to the destination chain's bridge contract to mint the new tokens. Upon successful simulation, the status is updated to `COMPLETED`.
     -   **`FAILED`**: If any step fails repeatedly, the transaction is marked as `FAILED` with a reason.
 
@@ -76,8 +83,9 @@ Follow these steps to set up and run the simulation.
 ### 1. Prerequisites
 
 -   Python 3.8+
--   Access to two Ethereum-compatible JSON-RPC endpoints (e.g., from [Infura](https://infura.io/), [Alchemy](https://www.alchemy.com/), or a local node like [Ganache](https://trufflesuite.com/ganache/)). You'll need one for the source chain and one for the destination chain.
+-   Access to two Ethereum-compatible JSON-RPC endpoints (e.g., from [Infura](https://infura.io/), [Alchemy](https://www.alchemy.com/), or a local node like [Ganache](https://trufflesuite.com/ganache/)).
 -   Deployed bridge contract addresses on both chains.
+-   The ABI (Application Binary Interface) for your bridge contract, typically as a JSON file.
 
 ### 2. Setup
 
@@ -102,10 +110,10 @@ pip install -r requirements.txt
 
 Create a file named `.env` in the root of the project directory. Add your configuration details to this file. **Replace the placeholder values with your actual data.**
 
-Note: The `.env` file contains sensitive information like API keys and should not be committed to version control. Ensure it is listed in your `.gitignore` file.
+Note: The `.env` file contains sensitive information like API keys and private keys and should **not** be committed to version control. Ensure it is listed in your `.gitignore` file.
 
 ```env
-# .env file
+# .env example
 
 # RPC endpoint for the source chain (e.g., Ethereum Mainnet, Sepolia, etc.)
 SOURCE_CHAIN_RPC_URL=https://sepolia.infura.io/v3/YOUR_INFURA_PROJECT_ID
@@ -118,14 +126,21 @@ SOURCE_BRIDGE_CONTRACT_ADDRESS=0x0000000000000000000000000000000000000001
 
 # Deployed bridge contract address on the destination chain
 DESTINATION_BRIDGE_CONTRACT_ADDRESS=0x0000000000000000000000000000000000000002
+
+# Private key of the relayer's wallet (prefixed with 0x)
+# This account must have funds on the destination chain to pay for gas fees.
+RELAYER_PRIVATE_KEY=0xyour_private_key_here_...
+
+# Number of block confirmations to wait for on the source chain
+CONFIRMATIONS_REQUIRED=12
 ```
 
 ### 4. Running the Script
 
-Execute the script from your terminal:
+Execute the main script from your terminal:
 
 ```bash
-python script.py
+python main.py
 ```
 
 You will see log output in your console as the relayer starts up, scans for blocks, and processes transactions.
